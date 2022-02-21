@@ -1,0 +1,65 @@
+#-Begin-----------------------------------------------------------------
+#-Includes--------------------------------------------------------------
+from pydoc import doc
+import sys, win32com.client
+import openpyxl
+import time
+import pyperclip
+import os, sys
+import pyautogui
+
+
+#-Function test---------------------------------------------------------
+
+os.chdir(sys.path[0]) ## cambia a la ruta del PY
+# application_path = os.path.dirname(sys.executable) ## cambia a la ruta del PY (sirve para correr desde .exe)
+
+
+
+SapGuiAuto = win32com.client.GetObject("SAPGUI")
+application = SapGuiAuto.GetScriptingEngine
+connection = application.Children(0)
+session = connection.Children(0)
+
+wb = openpyxl.load_workbook('f-51.xlsx')
+sheet = wb['PDF']
+rows = sheet.max_row
+for cell_row in range(2, rows+1):
+    doc_clearing = sheet.cell(row= cell_row, column=2).value
+    postin_doc = sheet.cell(row= cell_row, column=3).value
+    company_code = sheet.cell(row= cell_row, column=4).value
+
+
+    if postin_doc is None or postin_doc == 0: 
+        break
+    
+    session.findById("wnd[0]").maximize()
+    session.findById("wnd[0]/tbar[0]/okcd").text = "fb03"
+    session.findById("wnd[0]").sendVKey(0)
+    session.findById("wnd[0]/usr/txtRF05L-BELNR").text = doc_clearing
+    session.findById("wnd[0]/usr/ctxtRF05L-BUKRS").text = company_code
+    session.findById("wnd[0]/usr/txtRF05L-GJAHR").text = "2022"
+    session.findById("wnd[0]/usr/txtRF05L-GJAHR").setFocus()
+    session.findById("wnd[0]/usr/txtRF05L-GJAHR").caretPosition = 4
+    session.findById("wnd[0]/titl/shellcont/shell").pressContextButton("%GOS_TOOLBOX")
+    session.findById("wnd[0]/titl/shellcont/shell").selectContextMenuItem("%GOS_VIEW_ATTA")
+    session.findById("wnd[1]/usr/cntlCONTAINER_0100/shellcont/shell").currentCellColumn = "BITM_DESCR"
+    session.findById("wnd[1]/usr/cntlCONTAINER_0100/shellcont/shell").selectedRows = "0"
+    session.findById("wnd[1]/usr/cntlCONTAINER_0100/shellcont/shell").doubleClickCurrentCell()
+    ## aqui abre el ## doc   
+    time.sleep(1) 
+    pyautogui.hotkey('alt','d','s')
+    time.sleep(1)
+    pyautogui.hotkey('alt','n')
+    time.sleep(0.4)
+    pyautogui.write(str(doc_clearing))
+    time.sleep(0.4)
+    pyautogui.press('enter')
+    time.sleep(0.4)
+    pyautogui.hotkey('alt','d','x')
+    pyautogui.click()
+    time.sleep(1) 
+    
+    session.findById("wnd[1]").sendVKey(12)
+    session.findById("wnd[0]").sendVKey(3)
+    session.findById("wnd[0]").sendVKey(3)
