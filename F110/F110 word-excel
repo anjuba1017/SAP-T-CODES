@@ -1,0 +1,370 @@
+#-Begin-----------------------------------------------------------------
+#-Includes--------------------------------------------------------------
+import sys, win32com.client
+import openpyxl
+import pyautogui
+import time
+import docx
+from turtle import width
+from docx import Document
+from docx.shared import Inches
+from docx.shared import Pt
+import pyautogui
+import pyperclip
+import os, sys
+import docxtpl
+from docxtpl import DocxTemplate
+
+
+#-Function test---------------------------------------------------------
+
+os.chdir(sys.path[0]) ## cambia a la ruta del PY (sirve para correr desde el codigo)
+# application_path = os.path.dirname(sys.executable) ## cambia a la ruta del PY (sirve para correr desde .exe)
+
+
+
+
+def sap_connection():
+  
+
+  try:
+    SapGuiAuto = win32com.client.GetObject("SAPGUI")
+    if not type(SapGuiAuto) == win32com.client.CDispatch:
+      return
+
+    application = SapGuiAuto.GetScriptingEngine
+    if not type(application) == win32com.client.CDispatch:
+      SapGuiAuto = None
+      return
+
+    connection = application.Children(0)
+    if not type(connection) == win32com.client.CDispatch:
+      application = None
+      SapGuiAuto = None
+      return
+
+    session = connection.Children(0)
+    if not type(session) == win32com.client.CDispatch:
+      connection = None
+      application = None
+      SapGuiAuto = None
+      return
+      ##LISTAS##
+    tag_list = []   # GUARDA LAS LAS ETIQUETAS DEL A LAS QUE SE CONECTA EL WORD
+ 
+    runs_list = [] # GUARDA LAS CELDAS DEL EXCEL COLUMNA 1 / QUE REEMPLAZARÁ A TAG LIST
+    
+
+
+    wb = openpyxl.load_workbook('Payment run validation.xlsx')
+    type(wb)
+    sheet = wb['Menu']
+    rows = sheet.max_row
+    run_date = sheet.cell(row = 8,column = 5).value
+    # print(run_date)
+    # print(rows)
+    ## DAY ##
+      ## RUN STATUS ##
+    session.findById("wnd[0]/tbar[0]/okcd").text = "f110"
+    session.findById("wnd[0]").sendVKey(0)
+    session.findById("wnd[0]/usr/ctxtF110V-LAUFD").text = run_date
+    session.findById("wnd[0]/usr/ctxtF110V-LAUFI").setFocus()
+    session.findById("wnd[0]/usr/ctxtF110V-LAUFI").caretPosition = 4
+    session.findById("wnd[0]").sendVKey(0)
+    session.findById("wnd[0]").sendVKey(4)
+    session.findById("wnd[1]/usr/ctxtF110V-VONLD").text = run_date
+    session.findById("wnd[1]/usr/ctxtF110V-BISLD").text = run_date
+    session.findById("wnd[1]/usr/ctxtF110V-BISLD").setFocus()
+    session.findById("wnd[1]/usr/ctxtF110V-BISLD").caretPosition = 10
+    session.findById("wnd[1]/tbar[0]/btn[0]").press()
+    session.findById("wnd[1]/tbar[0]/btn[17]").press()
+    session.findById("wnd[1]/usr/tabsG_SELONETABSTRIP/tabpTAB001/ssubSUBSCR_PRESEL:SAPLSDH4:0220/sub:SAPLSDH4:0220/txtG_SELFLD_TAB-LOW[2,24]").text = "Payments have been posted"
+    session.findById("wnd[1]/usr/tabsG_SELONETABSTRIP/tabpTAB001/ssubSUBSCR_PRESEL:SAPLSDH4:0220/sub:SAPLSDH4:0220/txtG_SELFLD_TAB-LOW[2,24]").setFocus()
+    session.findById("wnd[1]/usr/tabsG_SELONETABSTRIP/tabpTAB001/ssubSUBSCR_PRESEL:SAPLSDH4:0220/sub:SAPLSDH4:0220/txtG_SELFLD_TAB-LOW[2,24]").caretPosition = 25
+    session.findById("wnd[1]/tbar[0]/btn[0]").press()
+    ## SCREENSHOT ##
+    time.sleep(1)
+    # checkimage1 = pyautogui.screenshot('image.png')
+    # checkimage = 'image.png' ################################ ORGANIZAR ESTO ##########
+    session.findById("wnd[1]").close()
+    session.findById("wnd[0]").sendVKey(3)
+
+     ### LLENA LA LISTA CON EL NOMBRE DE LOS IDS QUE SE LE COLOCARON EN EL EXCEL
+    jpg = 1
+    print(jpg)
+    for cell_row in range(14 , rows):
+        runs = sheet.cell(row = cell_row, column = 4).value
+        sum = -13
+        k = sum + cell_row
+        if runs is None or runs == 0: 
+            break
+        
+        # print(k)
+
+        ## CARGAR WORD ###
+        doc = DocxTemplate('Template.docx')
+
+        run_word_tag = 'RUN'+ str(k)
+        
+        session.findById("wnd[0]/tbar[0]/okcd").text = "f110"
+        session.findById("wnd[0]").sendVKey(0)
+# F    110 ID 
+        session.findById("wnd[0]/usr/ctxtF110V-LAUFD").text = run_date
+        session.findById("wnd[0]/usr/ctxtF110V-LAUFI").text = runs
+        session.findById("wnd[0]/usr/ctxtF110V-LAUFI").setFocus()
+        session.findById("wnd[0]/usr/ctxtF110V-LAUFI").caretPosition = 4
+        session.findById("wnd[0]").sendVKey(0)
+###    # ID SCREENSHOT #####
+        time.sleep(1)
+        home_tag1 = pyautogui.screenshot('image'+str(jpg)+'.png') #este me trae las especificaciones del png
+        home_tag = 'image'+str(jpg)+'.png' #nombre del png
+        time.sleep(1)
+##      PROPOSAL RUN ##
+        session.findById("wnd[0]").sendVKey(25)
+        session.findById("wnd[1]").sendVKey(0)
+        session.findById("wnd[0]").sendVKey(83)
+
+#         session.findById("wnd[0]/usr/lbl[117,35]").copy ##COPIAR VALORES ##
+#         session.findById("wnd[1]/usr/chkSCAN_STRING-START").selected = 0
+#         session.findById("wnd[1]/usr/chkSCAN_STRING-START").selected = 0
+
+####    # PROPOSAL SCREENSHOT ##### 
+        time.sleep(1)
+        amount_tag1 = pyautogui.screenshot('image'+str(jpg+1)+'.png') 
+        amount_tag = 'image'+str(jpg+1)+'.png'
+        time.sleep(1)
+        # # session.setFocus()
+        session.findById("wnd[0]").sendVKey(3)
+        try:
+            session.findById("wnd[0]/tbar[1]/btn[20]").press()
+            session.findById("wnd[0]").sendVKey(71)
+            session.findById("wnd[1]/usr/chkSCAN_STRING-START").selected = 0
+            session.findById("wnd[1]/usr/txtRSYSF-STRING").text = "IDOcs were generated for" ##SEARCH ##
+            ###     TEXT LOCATED ###
+            session.findById("wnd[1]/tbar[0]/btn[0]").press()
+            session.findById("wnd[2]/tbar[0]/btn[84]").press()
+            session.findById("wnd[2]/tbar[0]/btn[2]").press()
+            #    SCREENSHOT IDOCS ##
+            time.sleep(1)
+            idoc_tag1 = pyautogui.screenshot('image'+str(jpg+2)+'.png')
+            idoc_tag = 'image'+str(jpg+2)+'.png'
+            time.sleep(1)
+            #      JOB FINISHED ##
+            session.findById("wnd[0]").sendVKey(83)
+        #        SCREENSHOT JOB ##
+            time.sleep(1)
+            job_tag1 = pyautogui.screenshot('image'+str(jpg+3)+'.png')
+            job_tag = 'image'+str(jpg+3)+'.png'
+            time.sleep(1)
+            session.findById("wnd[0]").sendVKey(3)
+            session.findById("wnd[0]").sendVKey(3)
+
+        except:
+            session.findById("wnd[0]/tbar[1]/btn[20]").press()
+            session.findById("wnd[0]").sendVKey(2)
+            session.findById("wnd[0]").sendVKey(83)
+            time.sleep(1)
+            idoc_tag1 = pyautogui.screenshot('image'+str(jpg+2)+'.png')
+            idoc_tag = 'image'+str(jpg+2)+'.png'
+            time.sleep(1)
+            session.findById("wnd[0]").sendVKey(3)
+            ### SECOND LOG ####
+            session.findById("wnd[0]/tbar[1]/btn[20]").press()
+            session.findById("wnd[1]/usr/sub:SAPF110V:1120/txtF110V-STATU[1,0]").setFocus()
+            session.findById("wnd[1]/usr/sub:SAPF110V:1120/txtF110V-STATU[1,0]").caretPosition = 33
+            session.findById("wnd[1]").sendVKey(2)
+            time.sleep(1)
+            job_tag1 = pyautogui.screenshot('image'+str(jpg+3)+'.png')
+            job_tag = 'image'+str(jpg+3)+'.png'
+            time.sleep(1)
+            session.findById("wnd[0]").sendVKey(3) 
+            session.findById("wnd[0]").sendVKey(3)    
+
+
+
+        ## LLENADO DE LISTAS ###
+        tag_list.append(run_word_tag) ### LLENA LA LISTA CON LOS TAG DE RUN DEL WORD
+        # print(run_word_tag)
+        # print(tag_list)
+        runs_list.append(runs) ### LLENA LA LISTA CON EL NOMBRE DE LOS IDS QUE SE LE COLOCARON EN EL EXCEL
+        # print(runs)
+        # print(runs_list)
+        print(jpg)
+
+        if job_tag == 'image4.png':
+            jpg = 5
+        elif job_tag == 'image8.png':
+            jpg = 9
+        elif job_tag == 'image12.png':
+            jpg = 13
+        
+        dict_word = dict(zip(tag_list,runs_list)) ## EL TAG QUE ESTÁ EN EL WORD VS LA PALABRA QUE SERÁ REEMPLAZADA
+        print(dict_word)    
+
+    print(dict_word)    
+    time.sleep(1)
+    doc.render(dict_word) 
+    doc.save('ach run.docx')    
+  except:
+    return sys.exc_info()[0]
+  finally:
+    session = None
+    connection = None
+    application = None
+    SapGuiAuto = None
+
+def docx_find_replace_text(doc, search_text, replace_text):
+    paragraphs = list(doc.paragraphs)
+    for t in doc.tables:
+        for row in t.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    paragraphs.append(paragraph)
+    for p in paragraphs:
+        if search_text in p.text:
+            inline = p.runs
+            # Replace strings and retain the same style.
+            # The text to be replaced can be split over several runs so
+            # search through, identify which runs need to have text replaced
+            # then replace the text in those identified
+            started = False
+            search_index = 0
+            # found_runs is a list of (inline index, index of match, length of match)
+            found_runs = list()
+            found_all = False
+            replace_done = False
+            for i in range(len(inline)):
+
+                # case 1: found in single run so short circuit the replace
+                if search_text in inline[i].text and not started:
+                    found_runs.append((i, inline[i].text.find(search_text), len(search_text)))
+                    text = inline[i].text.replace(search_text, str(replace_text))
+                    inline[i].text = text
+                    replace_done = True
+                    found_all = True
+                    break
+
+                if search_text[search_index] not in inline[i].text and not started:
+                    # keep looking ...
+                    continue
+
+                # case 2: search for partial text, find first run
+                if search_text[search_index] in inline[i].text and inline[i].text[-1] in search_text and not started:
+                    # check sequence
+                    start_index = inline[i].text.find(search_text[search_index])
+                    check_length = len(inline[i].text)
+                    for text_index in range(start_index, check_length):
+                        if inline[i].text[text_index] != search_text[search_index]:
+                            # no match so must be false positive
+                            break
+                    if search_index == 0:
+                        started = True
+                    chars_found = check_length - start_index
+                    search_index += chars_found
+                    found_runs.append((i, start_index, chars_found))
+                    if search_index != len(search_text):
+                        continue
+                    else:
+                        # found all chars in search_text
+                        found_all = True
+                        break
+
+                # case 2: search for partial text, find subsequent run
+                if search_text[search_index] in inline[i].text and started and not found_all:
+                    # check sequence
+                    chars_found = 0
+                    check_length = len(inline[i].text)
+                    for text_index in range(0, check_length):
+                        if inline[i].text[text_index] == search_text[search_index]:
+                            search_index += 1
+                            chars_found += 1
+                        else:
+                            break
+                    # no match so must be end
+                    found_runs.append((i, 0, chars_found))
+                    if search_index == len(search_text):
+                        found_all = True
+                        break
+
+            if found_all and not replace_done:
+                for i, item in enumerate(found_runs):
+                    index, start, length = [t for t in item]
+                    if i == 0:
+                        text = inline[index].text.replace(inline[index].text[start:start + length], str(replace_text))
+                        inline[index].text = text
+                    else:
+                        text = inline[index].text.replace(inline[index].text[start:start + length], '')
+                        inline[index].text = text
+
+
+
+
+
+
+
+#-End------------------------------------------------------------------
+
+
+
+
+
+sap_connection()
+
+
+## READING EXCEL ##
+wb = openpyxl.load_workbook('Payment run validation.xlsx')
+type(wb)
+sheet = wb['Menu']
+rows = sheet.max_row
+# print(rows)
+day_excel = sheet.cell(row = 9,column = 5).value
+# print(day_excel)
+run_date = sheet.cell(row = 8,column = 5).value
+# print(run_date)
+person1 = sheet.cell(row = 10,column = 5).value
+# print(person1)
+person2 = sheet.cell(row = 11,column = 5).value
+# print(person2)
+
+word_list_run = [] ## ESTA LISTA ES LA QUE AGREGA LOS IDS AL WORD EN LISTA
+for cell_row in range(14 , rows):
+    id_individual = sheet.cell(row = cell_row, column = 4).value
+    if id_individual is None: 
+        break
+    word_list_run.append(id_individual)
+
+    # print(word_list_run) 
+numeros_de_id = len(word_list_run)
+print(numeros_de_id)
+numeros_de_id = int(numeros_de_id) * 4 
+
+# sample usage as per example 
+# DOCS REPLACE NAME
+day_tag = 'day' # GUARDA EL DIA
+runs_date_word = 'date_1' # GUARDA LA FECHA
+persona1 = 'person1' # GUARDA PERSONA 1
+persona2 = 'person2' # GUARDA PERSONA 2
+runs_id_word = 'runs_id'
+
+
+
+doc = docx.Document('ach run.docx')
+tables = doc.tables
+img = tables[0].rows[0].cells[0].add_paragraph().add_run().add_picture('image.png', width=Inches(5))
+for i in range (1,numeros_de_id):
+    numbers_of_tables = len(tables)
+    img_name = 'image'+str(i)+'.png'
+    print(img_name)
+    img = tables[i].rows[0].cells[0].add_paragraph().add_run().add_picture(img_name, width=Inches(5)) 
+
+
+ 
+docx_find_replace_text(doc,day_tag , day_excel )
+docx_find_replace_text(doc,runs_date_word , run_date )
+docx_find_replace_text(doc,persona1 , person1 )
+docx_find_replace_text(doc,persona2 , person2 )
+docx_find_replace_text(doc,runs_id_word , word_list_run )
+
+
+
+doc.save(run_date + day_excel + 'Payment Run Validation')
