@@ -1,0 +1,162 @@
+#-Begin-----------------------------------------------------------------
+#-Includes--------------------------------------------------------------
+import sys, win32com.client
+import openpyxl
+import pyautogui
+import time
+import pyperclip
+import os, sys
+
+
+
+#-Function test---------------------------------------------------------
+
+os.chdir(sys.path[0]) 
+
+
+def sap_connection():
+  
+
+  try:
+    SapGuiAuto = win32com.client.GetObject("SAPGUI")
+    if not type(SapGuiAuto) == win32com.client.CDispatch:
+      return
+
+    application = SapGuiAuto.GetScriptingEngine
+    if not type(application) == win32com.client.CDispatch:
+      SapGuiAuto = None
+      return
+
+    connection = application.Children(0)
+    if not type(connection) == win32com.client.CDispatch:
+      application = None
+      SapGuiAuto = None
+      return
+
+    session = connection.Children(0)
+    if not type(session) == win32com.client.CDispatch:
+      connection = None
+      application = None
+      SapGuiAuto = None
+      return
+
+    wb = openpyxl.load_workbook('TCODE F-51.xlsx')
+    sheet = wb['individual doc number']
+    rows = sheet.max_row
+
+    for cell_it in range(9, rows):
+      doc_date = sheet.cell(row=cell_it, column=1).value
+      post_date = sheet.cell(row=cell_it, column=2).value
+      period = sheet.cell(row=cell_it, column=3).value
+      type_sap = sheet.cell(row=cell_it, column=4).value
+      paying_cc = sheet.cell(row=cell_it, column=5).value
+      paying_upper = paying_cc
+      currency = sheet.cell(row=cell_it, column=6).value
+      reference = sheet.cell(row=cell_it, column=7).value
+      header_text = sheet.cell(row=cell_it, column=8).value
+      clearing_text = sheet.cell(row=cell_it, column=9).value
+      pstky = sheet.cell(row=cell_it, column=10).value
+      account_gl = sheet.cell(row=cell_it, column=11).value
+      amount = sheet.cell(row=cell_it, column=12).value
+      value_date = sheet.cell(row=cell_it, column=13).value
+      company_code = sheet.cell(row=cell_it, column=14).value
+      vendor = sheet.cell(row=cell_it, column=15).value
+      doc_number = sheet.cell(row=cell_it, column=16).value
+
+      ###### F-51 CODE ####
+      session.findById("wnd[0]").maximize()
+      session.findById("wnd[0]/tbar[0]/okcd").text = "f-51"
+      session.findById("wnd[0]").sendVKey(0)
+      session.findById("wnd[0]/usr/sub:SAPMF05A:0122/radRF05A-XPOS1[0,0]").select()
+      session.findById("wnd[0]/usr/ctxtBKPF-BLDAT").text = doc_date
+      session.findById("wnd[0]/usr/ctxtBKPF-BLART").text = type_sap
+      session.findById("wnd[0]/usr/ctxtBKPF-BUKRS").text = paying_cc
+      session.findById("wnd[0]/usr/ctxtBKPF-BUDAT").text = post_date
+      session.findById("wnd[0]/usr/txtBKPF-MONAT").text = period
+      session.findById("wnd[0]/usr/ctxtBKPF-WAERS").text = currency
+      session.findById("wnd[0]/usr/txtBKPF-XBLNR").text = reference
+      session.findById("wnd[0]/usr/txtBKPF-BKTXT").text = header_text
+      session.findById("wnd[0]/usr/txtRF05A-AUGTX").text = clearing_text
+      session.findById("wnd[0]/usr/ctxtRF05A-NEWBS").text = pstky
+      session.findById("wnd[0]/usr/ctxtRF05A-NEWKO").text = account_gl
+      session.findById("wnd[0]/usr/ctxtRF05A-NEWKO").setFocus()
+      session.findById("wnd[0]/usr/ctxtRF05A-NEWKO").caretPosition = 8
+      session.findById("wnd[0]/tbar[1]/btn[6]").press()
+      future_date1 = session.findById("wnd[0]/sbar/pane[0]").text
+      # print(future_date1)
+      if future_date1 == 'Check - document date is in the future':
+          session.findById("wnd[0]").sendVKey(0)
+      session.findById("wnd[0]/usr/txtBSEG-WRBTR").text = amount
+      session.findById("wnd[0]/usr/ctxtBSEG-VALUT").text = value_date
+      session.findById("wnd[0]/usr/ctxtBSEG-SGTXT").text = clearing_text
+      session.findById("wnd[0]/usr/ctxtBSEG-SGTXT").setFocus()
+      session.findById("wnd[0]/usr/ctxtBSEG-SGTXT").caretPosition = 22
+      session.findById("wnd[0]/tbar[1]/btn[6]").press()
+
+      #### Third part - company code and document number field #######
+
+      session.findById("wnd[0]/usr/sub:SAPMF05A:0710/radRF05A-XPOS1[2,0]").select()
+      session.findById("wnd[0]/usr/ctxtRF05A-AGBUK").text = company_code
+      session.findById("wnd[0]/usr/ctxtRF05A-AGKON").text = vendor
+      session.findById("wnd[0]/usr/sub:SAPMF05A:0710/radRF05A-XPOS1[2,0]").setFocus()
+      session.findById("wnd[0]/tbar[1]/btn[16]").press()
+      if future_date1 == 'Check - document date is in the future':
+          session.findById("wnd[0]").sendVKey(0)
+      session.findById("wnd[0]/usr/sub:SAPMF05A:0731/txtRF05A-SEL01[0,0]").text = doc_number
+      session.findById("wnd[0]/usr/sub:SAPMF05A:0731/txtRF05A-SEL01[0,0]").caretPosition = 10
+      session.findById("wnd[0]/tbar[1]/btn[16]").press() 
+  ## IF CC AND PAYING CC DIFFERENT
+      if str(paying_cc.upper()) == str(company_code.upper()):
+          print('Equal')
+          not_assigned = session.findById("wnd[0]/usr/tabsTS/tabpMAIN/ssubPAGE:SAPDF05X:6102/txtRF05A-DIFFB").text
+          print(not_assigned)
+          if not_assigned != '0.00 ':
+            break
+          session.findById("wnd[0]/tbar[0]/btn[11]").press()
+          clearing_doc = session.findById("wnd[0]/sbar/pane[0]").text
+          clearing_doc = str(clearing_doc[9:19])
+          print(clearing_doc)    
+          sheet.cell(row=cell_it, column=17).value = clearing_doc
+          wb.save('TCODE F-51.xlsx')
+          session.findById("wnd[0]").sendVKey(3)
+          session.findById("wnd[1]/usr/btnSPOP-OPTION1").press()
+
+      else:
+          print('Not equal')
+          not_assigned = session.findById("wnd[0]/usr/tabsTS/tabpMAIN/ssubPAGE:SAPDF05X:6102/txtRF05A-DIFFB").text
+          print(not_assigned)
+          if not_assigned != '0.00 ':
+            break
+          session.findById("wnd[0]/tbar[0]/btn[11]").press()
+          clearing_doc = session.findById("wnd[1]/usr/sub:SAPMF05A:0607/txtBKPF-BELNR[0,8]").text
+          sheet.cell(row=cell_it, column=17).value = clearing_doc
+          wb.save('TCODE F-51.xlsx')
+          time.sleep(1)
+          session.findById("wnd[1]/usr/sub:SAPMF05A:0607/txtBKPF-BELNR[0,8]").setFocus()
+          session.findById("wnd[1]/usr/sub:SAPMF05A:0607/txtBKPF-BELNR[0,8]").caretPosition = 10
+          session.findById("wnd[1]/tbar[0]/btn[0]").press()
+          session.findById("wnd[0]").sendVKey(3)
+          session.findById("wnd[1]/usr/btnSPOP-OPTION1").press()
+          
+      print('done')
+
+
+
+
+
+  except:
+    return sys.exc_info()[0]
+  finally:
+    session = None
+    connection = None
+    application = None
+    SapGuiAuto = None
+
+
+#-End------------------------------------------------------------------
+
+
+
+
+
+sap_connection()
