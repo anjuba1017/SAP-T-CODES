@@ -1,0 +1,98 @@
+#-Begin-----------------------------------------------------------------
+#-Includes--------------------------------------------------------------
+import sys, win32com.client
+import openpyxl
+import time
+import pyperclip
+import os, sys
+import pyautogui
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+import tkinter.messagebox
+from tkinter import simpledialog
+
+
+#-Function test---------------------------------------------------------
+
+# os.chdir(sys.path[0]) ## cambia a la ruta del PY
+application_path = os.path.dirname(sys.executable) ## cambia a la ruta del PY (sirve para correr desde .exe)
+
+def popup(x,y):
+    root = Tk()
+    frm = ttk.Frame(root, padding=10)
+    frm.grid()
+    ttk.Label(frm, text=x).grid(column=0, row=0)
+    ttk.Button(frm, text=y, command=root.destroy).grid(column=1, row=0)
+    root.mainloop()
+
+SapGuiAuto = win32com.client.GetObject("SAPGUI")
+application = SapGuiAuto.GetScriptingEngine
+connection = application.Children(0)
+session = connection.Children(0)
+
+wb = openpyxl.load_workbook('Cheques.xlsx')
+sheet = wb['FCH8']
+rows = sheet.max_row
+
+def FCH8():
+    for cell_row in range(7,rows+1):
+        check_number = sheet.cell(row=cell_row,column=1).value
+        if check_number is None or check_number == 0:
+            print('nothing else to void')
+            sheet.cell(row=cell_row, column=9).value = "Empty cell"
+            break
+        house_bank = sheet.cell(row=cell_row,column=2).value
+        account_id = sheet.cell(row=cell_row,column=3).value
+        paying_company = sheet.cell(row=cell_row,column=4).value
+        posting_date = sheet.cell(row=cell_row,column=5).value
+        posting_period = sheet.cell(row=cell_row,column=6).value
+        print(posting_period)
+        doc_cheque = sheet.cell(row=cell_row,column=7).value
+
+
+        session.findById("wnd[0]/tbar[0]/okcd").Text = "FCH8"
+        session.findById("wnd[0]").sendVKey(0)
+        session.findById("wnd[0]/usr/ctxtPAYR-ZBUKR").Text = paying_company
+        session.findById("wnd[0]/usr/ctxtPAYR-HBKID").Text = house_bank
+        session.findById("wnd[0]/usr/ctxtPAYR-HKTID").Text = account_id
+        session.findById("wnd[0]/usr/ctxtPAYR-CHECT").Text = check_number
+        session.findById("wnd[0]/usr/ctxtPAYR-VOIDR").Text = "10"
+        session.findById("wnd[0]/usr/ctxtRF05R-BUDAT").Text = posting_date
+        session.findById("wnd[0]/usr/ctxtUF05A-STGRD").text = "04"
+        session.findById("wnd[0]/usr/txtRF05R-MONAT").Text = posting_period
+
+        print(posting_period)
+
+    ## VALIDACIÓN DE PAYMENT DOC NUMBER 
+        try:
+            session.findById("wnd[0]/tbar[1]/btn[20]").press()
+        except:
+            sheet.cell(row=cell_row,column=9).value = "The cheque does not exist or incorrect number"
+            wb.save('Cheques.xlsx')
+
+        else:
+            doc_number_to_verify = str(session.findById("wnd[0]/usr/txtPAYR-VBLNR").Text)
+            print(doc_number_to_verify)
+            if str(doc_cheque) != doc_number_to_verify:
+                print('not equal')
+                sheet.cell(row=cell_row, column=9).value = "The document numbers are not equal"
+                wb.save('Cheques.xlsx')
+                break
+            else:
+                print('equal')
+                session.findById("wnd[0]").sendVKey(3)
+                session.findById("wnd[0]/tbar[1]/btn[20]").press
+                session.findById("wnd[0]/tbar[0]/btn[3]").press
+                session.findById("wnd[0]/tbar[1]/btn[17]").press
+                doc_number = session.findById("wnd[0]/sbar").text
+                doc_number = str(doc_number[61:71])
+                sheet.cell(row=cell_row, column=8).value = doc_number
+                sheet.cell(row=cell_row, column=9).value = "Done correctly"
+                wb.save('Cheques.xlsx')
+
+        wb.save('Cheques.xlsx')
+        print('done')
+    popup('DONE','ok')
+
+FCH8()
